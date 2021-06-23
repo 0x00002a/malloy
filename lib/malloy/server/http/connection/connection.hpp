@@ -3,6 +3,7 @@
 #include "malloy/http/request.hpp"
 #include "malloy/http/generator.hpp"
 #include "malloy/server/http/connection/connection_t.hpp"
+#include <malloy/server/http/connection/detail/route_handoff.hpp>
 
 #include "malloy/server/websocket/connection/connection_plain.hpp"
 #if MALLOY_FEATURE_TLS
@@ -41,17 +42,8 @@ namespace malloy::server::http
     class connection
     {
     public:
-        class handler {
-        public:
-            using request = malloy::http::request;
-            using conn_t = const connection_t&;
-            using path = std::filesystem::path;
+        using handler_t = detail::route_handoff;
 
-            virtual void websocket(const path& root, request&& req, conn_t) = 0;
-            virtual void http(const path& root, request&& req, conn_t) = 0;
-            
-        
-        };
         /**
          * Session configuration structure.
          */
@@ -76,7 +68,7 @@ namespace malloy::server::http
         connection(
             std::shared_ptr<spdlog::logger> logger,
             boost::beast::flat_buffer buffer,
-            std::shared_ptr<handler> router,
+            std::shared_ptr<handler_t> router,
             std::shared_ptr<const std::filesystem::path> http_doc_root
         ) :
             m_logger(std::move(logger)),
@@ -151,7 +143,7 @@ namespace malloy::server::http
     private:
         std::shared_ptr<spdlog::logger> m_logger;
         std::shared_ptr<const std::filesystem::path> m_doc_root;
-        std::shared_ptr<handler> m_router;
+        std::shared_ptr<handler_t> m_router;
         std::shared_ptr<void> m_response;
 
         // The parser is stored in an optional container so we can

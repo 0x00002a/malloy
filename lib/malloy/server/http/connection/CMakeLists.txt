@@ -7,3 +7,4 @@ target_sources(
 		connection_plain.hpp
 		connection_tls.hpp
 )
+add_subdirectory(detail)

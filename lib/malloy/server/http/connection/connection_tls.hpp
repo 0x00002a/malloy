@@ -23,7 +23,7 @@ namespace malloy::server::http
             std::shared_ptr<boost::asio::ssl::context> ctx,
             boost::beast::flat_buffer buffer,
             std::shared_ptr<const std::filesystem::path> doc_root,
-            std::shared_ptr<handler> router
+            std::shared_ptr<handler_t> router
         ) :
             connection<connection_tls>(
                 logger,
