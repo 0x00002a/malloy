@@ -82,7 +82,11 @@ jobs:
         shell: bash
       - name: Install latest mingw
         if: runner.os == 'Windows' && !matrix.msvc
-        run: choco upgrade mingw 
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64 
+          update: true 
+          install: git mingw-w64-x86_64-toolchain
       - name: Install latest MSVC 
         if: runner.os == 'Windows' && matrix.msvc
         uses: ilammy/msvc-dev-cmd@v1
