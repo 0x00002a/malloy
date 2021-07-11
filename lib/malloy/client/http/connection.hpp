@@ -57,7 +57,7 @@ namespace malloy::client::http
 
             // Look up the domain name
 
-            do_resolve(m_req.base()[malloy::http::field::host]);
+            do_resolve(std::string{m_req.base()[malloy::http::field::host]});
 
         }
 
@@ -167,11 +167,12 @@ namespace malloy::client::http
        }
        void handle_redirect() {
            const auto& resp_header = m_parser.get().base();
-           if (resp_header.count(boost::beast::http::fields::location) == 0) {
-               m_err_channel.set_exception(std::runtime_error{"Redirect response has no location field, header is invalid"});
+           constexpr auto target = malloy::http::field::location;
+           if (resp_header.count(target) == 0) {
+               m_err_channel.set_exception(std::make_exception_ptr(std::runtime_error{"Redirect response has no location field, header is invalid"}));
                return;
            }
-           const auto to = resp_header[boost::beast::http::fields::location];
+           const auto to = std::string{resp_header[target]};
            m_logger->debug("redirecting to: '{}'", to);
            do_resolve(to);
        }
