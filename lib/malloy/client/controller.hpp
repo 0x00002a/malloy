@@ -118,7 +118,7 @@ namespace malloy::client
 
             // Create connection
             auto conn = std::make_shared<http::connection_plain<ReqBody, Filter, std::decay_t<Callback>>>(
-                m_cfg.logger->clone(m_cli_cfg.logger->name() + " | HTTP connection"),
+                m_cfg.logger->clone(m_cfg.logger->name() + " | HTTP connection"),
                 io_ctx(),
                 m_cli_cfg.follow_redirects
             );
