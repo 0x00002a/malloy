@@ -22,6 +22,17 @@ namespace malloy::http
     {
         head.target(head.target().substr(resource.size()));
     }
+
+    inline auto is_redirect(boost::beast::http::status code) -> bool {
+        using namespace boost::beast::http;
+        switch(code) {
+            case status::temporary_redirect:
+            case status::permanent_redirect:
+                return true;
+            default:
+                return false;
+        }
+    }
 }
 
 

@@ -11,6 +11,7 @@
 #include <spdlog/logger.h>
 
 #include <future>
+#include <malloy/core/http/utils.hpp>
 #include <optional>
 
 namespace malloy::client::http
@@ -28,9 +29,10 @@ namespace malloy::client::http
         using resp_t = typename Filter::response_type;
         using callback_t = Callback;
 
-        connection(std::shared_ptr<spdlog::logger> logger, boost::asio::io_context& io_ctx) :
+        connection(std::shared_ptr<spdlog::logger> logger, boost::asio::io_context& io_ctx, bool follow_redirects) :
             m_logger(std::move(logger)),
-            m_resolver(boost::asio::make_strand(io_ctx))
+            m_resolver(boost::asio::make_strand(io_ctx)),
+            m_follow_redirects{follow_redirects}
         {
             // Sanity check
             if (!m_logger)
@@ -51,16 +53,12 @@ namespace malloy::client::http
             m_req = std::move(req);
             m_err_channel = std::move(err_channel);
             m_cb.emplace(std::move(cb));
+            m_port = port;
 
             // Look up the domain name
-            m_resolver.async_resolve(
-                m_req.base()[malloy::http::field::host],
-                port,
-                boost::beast::bind_front_handler(
-                    &connection::on_resolve,
-                    derived().shared_from_this()
-                )
-            );
+
+            do_resolve(m_req.base()[malloy::http::field::host]);
+
         }
 
     protected:
@@ -88,12 +86,24 @@ namespace malloy::client::http
         std::promise<malloy::error_code> m_err_channel;
         std::optional<callback_t> m_cb;
         Filter m_req_filter;
+        bool m_follow_redirects;
+        std::string m_port; // Needed for redirects TODO: Should this really be a string?
 
         [[nodiscard]]
         Derived&
         derived()
         {
             return static_cast<Derived&>(*this);
+        }
+        void do_resolve(const std::string& host) {
+            m_resolver.async_resolve(
+                host,
+                m_port,
+                boost::beast::bind_front_handler(
+                    &connection::on_resolve,
+                    derived().shared_from_this()
+                )
+            );
         }
 
         void
@@ -155,10 +165,25 @@ namespace malloy::client::http
             );
 
        }
-        void on_read_header(malloy::error_code ec, std::size_t) {
+       void handle_redirect() {
+           const auto& resp_header = m_parser.get().base();
+           if (resp_header.count(boost::beast::http::fields::location) == 0) {
+               m_err_channel.set_exception(std::runtime_error{"Redirect response has no location field, header is invalid"});
+               return;
+           }
+           const auto to = resp_header[boost::beast::http::fields::location];
+           m_logger->debug("redirecting to: '{}'", to);
+           do_resolve(to);
+       }
+        void on_read_header(malloy::error_code ec, std::size_t)
+        {
             if (ec) {
                 m_logger->error("on_read_header: '{}'", ec.message());
                 m_err_channel.set_value(ec);
+                return;
+            }
+            if (m_follow_redirects && malloy::http::is_redirect(m_parser.get().base().result())) {
+                handle_redirect();
                 return;
             }
 
@@ -173,17 +198,17 @@ namespace malloy::client::http
                     m_buffer,
                     *parser,
                     [this, parser, me = derived().shared_from_this()](auto ec, auto) {
-                    if (ec) {
-                        m_logger->error("on_read(): {}", ec.message());
-                        m_err_channel.set_value(ec);
-                        return;
-                    }
-                    // Notify via callback
-                    (*m_cb)(malloy::http::response<body_t>{parser->release()});
-                    on_read();
-                }
-                );
-                }, std::move(bodies));
+                        if (ec) {
+                            m_logger->error("on_read(): {}", ec.message());
+                            m_err_channel.set_value(ec);
+                            return;
+                        }
+                        // Notify via callback
+                        (*m_cb)(malloy::http::response<body_t>{parser->release()});
+                        on_read();
+                    });
+            },
+                       std::move(bodies));
         }
 
         void

@@ -66,10 +66,28 @@ namespace malloy::client
     public:
         struct config :
             malloy::controller::config {
+            /**
+             * @brief Whether to follow http redirects automatically
+             */
+            bool follow_redirects{true};
         };
 
         controller() = default;
         ~controller() override = default;
+
+        /**
+         * @brief Set whether to automatically follow http redirects
+         * @sa follow_redirects
+         */
+        constexpr void set_follow_redirects(bool value) {
+            m_cfg.follow_redirects = value;
+        }
+        /**
+         * @brief Whether the controller will automatically follow redirects
+         */
+        [[nodiscard]] constexpr auto follow_redirects() -> bool {
+            return m_cfg.follow_redirects;
+        }
 
 #if MALLOY_FEATURE_TLS
         /**
@@ -101,7 +119,8 @@ namespace malloy::client
             // Create connection
             auto conn = std::make_shared<http::connection_plain<ReqBody, Filter, std::decay_t<Callback>>>(
                 m_cfg.logger->clone(m_cfg.logger->name() + " | HTTP connection"),
-                io_ctx()
+                io_ctx(),
+                m_cfg.follow_redirects
             );
 
             // Run
@@ -134,7 +153,8 @@ namespace malloy::client
             auto conn = std::make_shared<http::connection_tls<ReqBody, Filter, std::decay_t<Callback>>>(
                 m_cfg.logger->clone(m_cfg.logger->name() + " | HTTP connection"),
                 io_ctx(),
-                *m_tls_ctx
+                *m_tls_ctx,
+                m_cfg.follow_redirects
             );
 
             // Run
@@ -221,6 +241,7 @@ namespace malloy::client
 
     private:
         std::shared_ptr<boost::asio::ssl::context> m_tls_ctx;
+        config m_cfg;
 
         /**
          * Checks whether the TLS context was initialized.
