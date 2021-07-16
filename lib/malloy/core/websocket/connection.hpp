@@ -99,6 +99,10 @@ namespace malloy::websocket
                     });
             });
         }
+        auto set_auto_keep_alive(bool alive) {
+            m_ws.set_option(boost::beast::websocket::stream_base::timeout{.keep_alive_pings = alive});
+        }
+
 
         /**
          * @brief Accept an incoming connection
@@ -257,6 +261,7 @@ namespace malloy::websocket
             m_ws.set_option(
                 boost::beast::websocket::stream_base::timeout::suggested(
                     isClient ? boost::beast::role_type::client : boost::beast::role_type::server));
+            set_auto_keep_alive(true);
 
             const auto agent_field = isClient ? malloy::http::field::user_agent : malloy::http::field::server;
             m_ws.set_option(
