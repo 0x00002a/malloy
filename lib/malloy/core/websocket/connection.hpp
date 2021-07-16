@@ -100,7 +100,9 @@ namespace malloy::websocket
             });
         }
         auto set_auto_keep_alive(bool alive) {
-            m_ws.set_option(boost::beast::websocket::stream_base::timeout{.keep_alive_pings = alive});
+            auto suggested = suggested_timeout();
+            suggested.keep_alive_pings = alive;
+            m_ws.set_option(suggested);
         }
 
 
@@ -253,14 +255,15 @@ namespace malloy::websocket
             if (!m_logger)
                 throw std::invalid_argument("no valid logger provided.");
         }
+        static auto suggested_timeout() -> boost::beast::websocket::stream_base::timeout {
+            return boost::beast::websocket::stream_base::timeout::suggested(
+                isClient ? boost::beast::role_type::client : boost::beast::role_type::server);
+        }
 
         void
         setup_connection()
         {
             // Set suggested timeout settings for the websocket
-            m_ws.set_option(
-                boost::beast::websocket::stream_base::timeout::suggested(
-                    isClient ? boost::beast::role_type::client : boost::beast::role_type::server));
             set_auto_keep_alive(true);
 
             const auto agent_field = isClient ? malloy::http::field::user_agent : malloy::http::field::server;
