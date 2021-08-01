@@ -20,6 +20,7 @@ function(malloy_target_common_setup TARGET)
                 /WX
                 /external:anglebrackets # Disable warnings for dependencies
                 /external:W0
+                /external:I ${Boost_INCLUDE_DIRS}
             )
     elseif (${CMAKE_CXX_COMPILER_ID} MATCHES "(AppleClang|Clang|GNU)" AND NOT MINGW)
         target_compile_options( 
