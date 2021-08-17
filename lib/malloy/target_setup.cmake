@@ -21,7 +21,7 @@ function(malloy_target_common_setup TARGET)
                 /external:anglebrackets # Disable warnings for dependencies
                 /external:W0
                 /external:I ${Boost_INCLUDE_DIRS}
-                /external:I "${CMAKE_CURRENT_LIST_DIR}/client/3rdparty"
+                /external:I "${CMAKE_CURRENT_SOURCE_DIR}/client/3rdparty"
             )
     elseif (${CMAKE_CXX_COMPILER_ID} MATCHES "(AppleClang|Clang|GNU)" AND NOT MINGW)
         target_compile_options( 
