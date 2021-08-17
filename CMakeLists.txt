@@ -17,8 +17,10 @@ option(MALLOY_FEATURE_HTML   "Whether to enable HTML features" ON)
 option(MALLOY_FEATURE_TLS    "Whether to enable TLS features"  OFF)
 option(MALLOY_DEPENDENCY_SPDLOG_DOWNLOAD "Whether to automatically fetch spdlog" ON)
 option(MALLOY_DEPENDENCY_FMT_DOWNLOAD "Whether to automatically fetch fmt" ON)
+option(MALLOY_INTERNAL_CIMODE "Don't use this option (its for the CI)" OFF)
 
 set(MALLOY_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/bin) # Needed for later
+
 
 if (MSVC AND MALLOY_BUILD_SHARED)
     set(MALLOY_EXPORT_SYMBOLS ON)

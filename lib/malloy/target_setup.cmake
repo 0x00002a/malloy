@@ -32,6 +32,10 @@ function(malloy_target_common_setup TARGET)
                 -Werror
             )
     endif()
+        
+    if (MSVC AND MALLOY_INTERNAL_CIMODE) 
+        target_compile_options(${TARGET} PRIVATE /Zm100)
+    endif()
 
     target_compile_definitions(
         ${TARGET}
